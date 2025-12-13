@@ -23,6 +23,7 @@ from typing import Tuple, List, Dict
 from filterpy.kalman import KalmanFilter
 
 import time
+import argparse
 
 # Import YOLO from ultralytics
 from ultralytics import YOLO
@@ -448,6 +449,13 @@ def main():
     """
     Example usage of the 3D object localizer.
     """
+
+    parser = argparse.ArgumentParser(description='Process image with object detection')
+    parser.add_argument('--input', '-i', type=str, required=True, help='Path to input image file')
+    parser.add_argument('--output', '-o', type=str, default='output.jpg', help='Path to output image file (default: output.jpg)')
+    args = parser.parse_args()
+
+
     # Initialize localizer
     localizer = Object3DLocalizer(
         yolo_model="./trained/best.pt",  # Fastest YOLO11 model
@@ -456,7 +464,7 @@ def main():
 
     # Example: Process an image
     # image_path = "./train/DroneSmaller.png"  # Replace with your image path
-    image_path = "./train/photo_2025-12-09_18-04-09.jpg"  # Replace with your image path
+    image_path = args.input  # Replace with your image path
 
     if not Path(image_path).exists():
         print(f"\nError: Image not found at {image_path}")
@@ -483,7 +491,7 @@ def main():
         print(f"   Distance from camera: {Z:.3f}m")
 
     # Save result
-    output_path = "output_3d_localization.jpg"
+    output_path = args.output
     cv2.imwrite(output_path, annotated_image)
     print(f"\n✓ Annotated image saved to: {output_path}")
 
@@ -508,80 +516,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-"""
-METHODS ANALYSIS & RECOMMENDATIONS
-===================================
-
-1. DEPTH ESTIMATION METHODS (Ranked by Performance):
-
-   A. ✓ Depth Pro (Apple) - RECOMMENDED
-      - Pros: Metric depth with absolute scale, no camera metadata required,
-              extremely fast (0.3s), sharp boundaries, state-of-the-art accuracy
-      - Best for: Production systems, real-time applications, unknown cameras
-      - Performance: 2.25MP depth in 0.3s on GPU
-
-   B. MiDaS v3.1 (Intel)
-      - Pros: Robust relative depth, well-established, good generalization
-      - Cons: Relative depth only (needs scale calibration), slower than Depth Pro
-      - Best for: When scale doesn't matter (e.g., relative ordering)
-
-   C. Depth Anything V2
-      - Pros: Good zero-shot performance, faster than MiDaS
-      - Cons: Still relative depth, less accurate boundaries than Depth Pro
-
-   D. ZoeDepth
-      - Pros: Metric depth estimation, good indoor performance
-      - Cons: Requires camera intrinsics, slower than Depth Pro
-
-2. ALTERNATIVE APPROACHES:
-
-   A. Stereo Vision (Multiple Cameras)
-      - Pros: Highly accurate, real metric depth
-      - Cons: Requires calibrated camera rig, not "static single camera"
-
-   B. Structure from Motion (SfM)
-      - Pros: Very accurate 3D reconstruction
-      - Cons: Requires multiple views/camera movement
-
-   C. LiDAR/Depth Sensors
-      - Pros: Direct depth measurement, very accurate
-      - Cons: Requires special hardware, expensive
-
-3. IMPROVEMENTS FOR PRODUCTION:
-
-   A. Camera Calibration:
-      - Calibrate your specific camera for better accuracy
-      - Store intrinsics (fx, fy, cx, cy) instead of estimation
-
-   B. Temporal Filtering:
-      - For video: Use Kalman filtering to smooth 3D trajectories
-      - Track objects across frames for stable coordinates
-
-   C. Ground Plane Detection:
-      - Fit plane to ground points for more accurate Y coordinates
-      - Enables better object placement and height estimation
-
-   D. Multi-frame Fusion:
-      - Average depth estimates across multiple frames
-      - Reduces noise and improves stability
-
-4. ACCURACY EXPECTATIONS:
-
-   - Depth Pro accuracy: ~5-10% error at <10m distances
-   - Best at: 0.5m - 15m range
-   - Challenges: Transparent objects, mirrors, very distant objects
-   - Real-world error: ±10-30cm for objects at 3-5m
-
-5. PERFORMANCE OPTIMIZATIONS:
-
-   - Use TensorRT for YOLO inference (2-3x speedup)
-   - Use ONNX Runtime for Depth Pro (if available)
-   - Process at lower resolution if needed
-   - Batch processing for multiple images
-   - GPU with ≥8GB VRAM recommended for real-time
-
-CONCLUSION: Depth Pro is the best choice for this task due to its metric
-depth output, speed, and no requirement for camera metadata.
-"""
