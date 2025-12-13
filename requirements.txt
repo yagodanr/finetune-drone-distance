@@ -1,0 +1,4 @@
+opencv-contrib-python==4.12.0.88
+ultralytics==8.3.237
+sahi==0.11.36
+filterpy==1.4.5
