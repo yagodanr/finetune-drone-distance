@@ -48,7 +48,25 @@ model = AutoDetectionModel.from_pretrained(
 
 # Use OpenCV or similar to read video frames
 import cv2
-cap = cv2.VideoCapture("video_2025-12-08_15-46-28.mp4")
+import argparse
+
+# Parse command line arguments
+parser = argparse.ArgumentParser(description='Process video with object detection')
+parser.add_argument('--input', '-i', type=str, required=True, help='Path to input video file')
+parser.add_argument('--output', '-o', type=str, default='output.avi', help='Path to output video file (default: output.avi)')
+args = parser.parse_args()
+
+cap = cv2.VideoCapture(args.input)
+
+fps = cap.get(cv2.CAP_PROP_FPS)
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+
+videoWriter = cv2.VideoWriter(args.output,
+                             cv2.VideoWriter_fourcc(*'MJPG'),
+                             fps,
+                             (width, height))
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret: break
@@ -67,7 +85,10 @@ while cap.isOpened():
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
         label = f"{category_name}: {score}"
         cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+    videoWriter.write(frame)
     cv2.imshow("Frame", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 cap.release()
+videoWriter.release()
+cv2.destroyAllWindows()
